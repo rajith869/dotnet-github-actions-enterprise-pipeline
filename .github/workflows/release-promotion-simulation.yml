@@ -95,7 +95,7 @@ jobs:
         run: |
           "### Promotion simulation" >> $env:GITHUB_STEP_SUMMARY
           "" >> $env:GITHUB_STEP_SUMMARY
-          "- Package artifact: `${{ needs.package.outputs.package_artifact_name }}`" >> $env:GITHUB_STEP_SUMMARY
-          "- Sample version: `${{ needs.build.outputs.package_version }}`" >> $env:GITHUB_STEP_SUMMARY
-          "- Target environment: `${{ inputs.target_environment }}`" >> $env:GITHUB_STEP_SUMMARY
+          "- Package artifact: ${{ needs.package.outputs.package_artifact_name }}" >> $env:GITHUB_STEP_SUMMARY
+          "- Sample version: ${{ needs.build.outputs.package_version }}" >> $env:GITHUB_STEP_SUMMARY
+          "- Target environment: ${{ inputs.target_environment }}" >> $env:GITHUB_STEP_SUMMARY
           "- Deployment: simulation only" >> $env:GITHUB_STEP_SUMMARY

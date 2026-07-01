@@ -62,7 +62,7 @@ jobs:
         run: |
           "### CI result" >> $env:GITHUB_STEP_SUMMARY
           "" >> $env:GITHUB_STEP_SUMMARY
-          "- Build artifact: `${{ needs.build.outputs.build_artifact_name }}`" >> $env:GITHUB_STEP_SUMMARY
-          "- Package artifact: `${{ needs.package.outputs.package_artifact_name }}`" >> $env:GITHUB_STEP_SUMMARY
-          "- Sample version: `${{ needs.build.outputs.package_version }}`" >> $env:GITHUB_STEP_SUMMARY
+          "- Build artifact: ${{ needs.build.outputs.build_artifact_name }}" >> $env:GITHUB_STEP_SUMMARY
+          "- Package artifact: ${{ needs.package.outputs.package_artifact_name }}" >> $env:GITHUB_STEP_SUMMARY
+          "- Sample version: ${{ needs.build.outputs.package_version }}" >> $env:GITHUB_STEP_SUMMARY
           "- Release model: build once, package once, promote later" >> $env:GITHUB_STEP_SUMMARY
