@@ -1,0 +1,85 @@
+name: reusable-dotnet-build
+
+on:
+  workflow_call:
+    inputs:
+      dotnet_version:
+        description: .NET SDK version used by the workflow.
+        required: false
+        type: string
+        default: 8.0.x
+      solution_path:
+        description: Path to the solution file.
+        required: false
+        type: string
+        default: dotnet-github-actions-enterprise-pipeline.sln
+      configuration:
+        description: Build configuration.
+        required: false
+        type: string
+        default: Release
+      api_project_path:
+        description: Project published into the build artifact.
+        required: false
+        type: string
+        default: src/Sample.Api/Sample.Api.csproj
+      artifact_name:
+        description: Name of the uploaded build artifact.
+        required: false
+        type: string
+        default: sample-build-output
+      version_prefix:
+        description: Major/minor version prefix used with the GitHub run number.
+        required: false
+        type: string
+        default: "1.0"
+    outputs:
+      build_artifact_name:
+        description: Uploaded build artifact name.
+        value: ${{ jobs.build.outputs.build_artifact_name }}
+      package_version:
+        description: Sample semantic version assigned to the build.
+        value: ${{ jobs.build.outputs.package_version }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      build_artifact_name: ${{ steps.metadata.outputs.build_artifact_name }}
+      package_version: ${{ steps.metadata.outputs.package_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ inputs.dotnet_version }}
+
+      - name: Prepare build metadata
+        id: metadata
+        shell: pwsh
+        run: |
+          $version = "${{ inputs.version_prefix }}.${{ github.run_number }}"
+          "package_version=$version" >> $env:GITHUB_OUTPUT
+          "build_artifact_name=${{ inputs.artifact_name }}" >> $env:GITHUB_OUTPUT
+
+      - name: Restore, build, and publish
+        shell: pwsh
+        run: |
+          ./scripts/build.ps1 `
+            -SolutionPath "${{ inputs.solution_path }}" `
+            -Configuration "${{ inputs.configuration }}" `
+            -Version "${{ steps.metadata.outputs.package_version }}" `
+            -PublishProjectPath "${{ inputs.api_project_path }}" `
+            -OutputPath "./artifacts/build/Sample.Api"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: artifacts/build
+          if-no-files-found: error

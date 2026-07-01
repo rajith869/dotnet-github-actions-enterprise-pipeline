@@ -1,0 +1,55 @@
+name: reusable-dotnet-test
+
+on:
+  workflow_call:
+    inputs:
+      dotnet_version:
+        description: .NET SDK version used by the workflow.
+        required: false
+        type: string
+        default: 8.0.x
+      solution_path:
+        description: Path to the solution file.
+        required: false
+        type: string
+        default: dotnet-github-actions-enterprise-pipeline.sln
+      configuration:
+        description: Test configuration.
+        required: false
+        type: string
+        default: Release
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ inputs.dotnet_version }}
+
+      - name: Restore
+        run: dotnet restore "${{ inputs.solution_path }}"
+
+      - name: Test
+        run: >
+          dotnet test "${{ inputs.solution_path }}"
+          --configuration "${{ inputs.configuration }}"
+          --no-restore
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory artifacts/test-results
+          --collect "XPlat Code Coverage"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sample-test-results
+          path: artifacts/test-results
+          if-no-files-found: warn

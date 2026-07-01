@@ -1,0 +1,101 @@
+name: release-promotion-simulation
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: Environment gate used for the promotion simulation.
+        required: true
+        type: choice
+        default: development
+        options:
+          - development
+          - test
+          - staging
+      version_prefix:
+        description: Major/minor version prefix for the sample artifact.
+        required: true
+        type: string
+        default: "1.0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-promotion-simulation-${{ github.ref }}-${{ inputs.target_environment }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build once
+    uses: ./.github/workflows/reusable-dotnet-build.yml
+    with:
+      dotnet_version: 8.0.x
+      solution_path: dotnet-github-actions-enterprise-pipeline.sln
+      configuration: Release
+      api_project_path: src/Sample.Api/Sample.Api.csproj
+      artifact_name: release-build-output
+      version_prefix: ${{ inputs.version_prefix }}
+
+  test:
+    name: Test release candidate
+    needs: build
+    uses: ./.github/workflows/reusable-dotnet-test.yml
+    with:
+      dotnet_version: 8.0.x
+      solution_path: dotnet-github-actions-enterprise-pipeline.sln
+      configuration: Release
+
+  package:
+    name: Package release candidate
+    needs:
+      - build
+      - test
+    uses: ./.github/workflows/reusable-package.yml
+    with:
+      build_artifact_name: ${{ needs.build.outputs.build_artifact_name }}
+      package_artifact_name: release-candidate-package
+      package_name: sample-api
+      package_version: ${{ needs.build.outputs.package_version }}
+
+  promote:
+    name: Promote unchanged artifact
+    needs:
+      - build
+      - package
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target_environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download packaged artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.package.outputs.package_artifact_name }}
+          path: artifacts/incoming/package
+
+      - name: Simulate environment promotion
+        shell: pwsh
+        run: |
+          ./scripts/promote-artifact.ps1 `
+            -PackagePath "./artifacts/incoming/package" `
+            -TargetEnvironment "${{ inputs.target_environment }}" `
+            -OutputPath "./artifacts/promotion"
+
+      - name: Upload promotion record
+        uses: actions/upload-artifact@v4
+        with:
+          name: promotion-record-${{ inputs.target_environment }}
+          path: artifacts/promotion
+          if-no-files-found: error
+
+      - name: Write promotion summary
+        shell: pwsh
+        run: |
+          "### Promotion simulation" >> $env:GITHUB_STEP_SUMMARY
+          "" >> $env:GITHUB_STEP_SUMMARY
+          "- Package artifact: `${{ needs.package.outputs.package_artifact_name }}`" >> $env:GITHUB_STEP_SUMMARY
+          "- Sample version: `${{ needs.build.outputs.package_version }}`" >> $env:GITHUB_STEP_SUMMARY
+          "- Target environment: `${{ inputs.target_environment }}`" >> $env:GITHUB_STEP_SUMMARY
+          "- Deployment: simulation only" >> $env:GITHUB_STEP_SUMMARY

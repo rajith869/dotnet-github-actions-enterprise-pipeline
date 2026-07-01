@@ -1,0 +1,67 @@
+name: reusable-package
+
+on:
+  workflow_call:
+    inputs:
+      build_artifact_name:
+        description: Build artifact downloaded for packaging.
+        required: true
+        type: string
+      package_artifact_name:
+        description: Name of the uploaded package artifact.
+        required: false
+        type: string
+        default: sample-release-package
+      package_name:
+        description: Public-safe package name.
+        required: false
+        type: string
+        default: sample-api
+      package_version:
+        description: Version assigned by the build workflow.
+        required: true
+        type: string
+    outputs:
+      package_artifact_name:
+        description: Uploaded package artifact name.
+        value: ${{ jobs.package.outputs.package_artifact_name }}
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    outputs:
+      package_artifact_name: ${{ steps.metadata.outputs.package_artifact_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.build_artifact_name }}
+          path: artifacts/incoming/build
+
+      - name: Package unchanged build output
+        shell: pwsh
+        run: |
+          ./scripts/package.ps1 `
+            -BuildOutputPath "./artifacts/incoming/build" `
+            -PackageOutputPath "./artifacts/package" `
+            -PackageName "${{ inputs.package_name }}" `
+            -Version "${{ inputs.package_version }}"
+
+      - name: Prepare package metadata
+        id: metadata
+        shell: pwsh
+        run: |
+          "package_artifact_name=${{ inputs.package_artifact_name }}" >> $env:GITHUB_OUTPUT
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.package_artifact_name }}
+          path: artifacts/package
+          if-no-files-found: error
