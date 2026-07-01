@@ -33,7 +33,7 @@ public sealed class ArtifactPromotionPolicyTests
             CommitSha: "sample-sha",
             CreatedAtUtc: DateTimeOffset.UtcNow);
 
-        var decision = policy.Evaluate(manifest, "private-production");
+        var decision = policy.Evaluate(manifest, "unsupported-environment");
 
         Assert.False(decision.CanPromote);
     }

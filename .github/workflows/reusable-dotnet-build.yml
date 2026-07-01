@@ -1,4 +1,4 @@
-name: reusable-dotnet-build
+name: Reusable .NET Build
 
 on:
   workflow_call:
@@ -27,7 +27,7 @@ on:
         description: Name of the uploaded build artifact.
         required: false
         type: string
-        default: sample-build-output
+        default: sample-api-build-output
       version_prefix:
         description: Major/minor version prefix used with the GitHub run number.
         required: false
@@ -46,6 +46,7 @@ permissions:
 
 jobs:
   build:
+    name: Restore, build, and publish
     runs-on: ubuntu-latest
     outputs:
       build_artifact_name: ${{ steps.metadata.outputs.build_artifact_name }}

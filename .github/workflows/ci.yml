@@ -1,4 +1,4 @@
-name: ci
+name: CI - Build, Test, Package
 
 on:
   push:
@@ -18,18 +18,18 @@ concurrency:
 
 jobs:
   build:
-    name: Build
+    name: Build application
     uses: ./.github/workflows/reusable-dotnet-build.yml
     with:
       dotnet_version: 8.0.x
       solution_path: dotnet-github-actions-enterprise-pipeline.sln
       configuration: Release
       api_project_path: src/Sample.Api/Sample.Api.csproj
-      artifact_name: sample-build-output
+      artifact_name: sample-api-build-output
       version_prefix: "1.0"
 
   test:
-    name: Test
+    name: Run tests
     needs: build
     uses: ./.github/workflows/reusable-dotnet-test.yml
     with:
@@ -38,19 +38,19 @@ jobs:
       configuration: Release
 
   package:
-    name: Package
+    name: Package artifact
     needs:
       - build
       - test
     uses: ./.github/workflows/reusable-package.yml
     with:
       build_artifact_name: ${{ needs.build.outputs.build_artifact_name }}
-      package_artifact_name: sample-release-package
+      package_artifact_name: sample-api-release-package
       package_name: sample-api
       package_version: ${{ needs.build.outputs.package_version }}
 
   summarize:
-    name: Summary
+    name: Publish CI summary
     needs:
       - build
       - test

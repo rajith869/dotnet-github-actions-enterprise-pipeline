@@ -1,6 +1,6 @@
 # dotnet-github-actions-enterprise-pipeline
 
-Public-safe portfolio repository for a Senior .NET Backend Engineer. It demonstrates how an enterprise-style .NET application suite can use reusable GitHub Actions workflows for build, test, package, artifact handling, and build-once/promote-later release thinking.
+Public-safe portfolio repository for a Senior .NET Backend Engineer. It demonstrates how a .NET application suite can use reusable GitHub Actions workflows for build, test, package, artifact handling, and build-once/promote-later release thinking.
 
 This is not production code from an employer. It uses only generic sample names and intentionally avoids confidential architecture, credentials, endpoints, repositories, servers, databases, deployment targets, and business workflows.
 
@@ -9,6 +9,8 @@ This is not production code from an employer. It uses only generic sample names 
 The repository contains a small multi-project .NET solution and a set of GitHub Actions workflows that separate continuous integration from release promotion. The application code is intentionally simple so the CI/CD design is the main focus.
 
 The sample API exposes public-safe endpoints for health, release readiness, and promotion decision checks. The Core project contains neutral release policy logic, while Infrastructure provides an in-memory implementation that stands in for external dependencies without naming or modeling any real systems.
+
+For reviewers, the most important files are the workflow definitions in `.github/workflows`, the helper scripts in `scripts`, and the release-flow documentation in `docs`.
 
 ## Why Reusable Workflows Matter
 
@@ -29,27 +31,27 @@ That design improves maintainability, reduces pipeline drift, makes modernizatio
 
 ```text
 .
-├── .github/workflows
-│   ├── ci.yml
-│   ├── reusable-dotnet-build.yml
-│   ├── reusable-dotnet-test.yml
-│   ├── reusable-package.yml
-│   └── release-promotion-simulation.yml
-├── docs
-│   ├── architecture.md
-│   ├── release-flow.md
-│   ├── what-this-demonstrates.md
-│   └── workflow-design.md
-├── scripts
-│   ├── build.ps1
-│   ├── package.ps1
-│   └── promote-artifact.ps1
-├── src
-│   ├── Sample.Api
-│   ├── Sample.Core
-│   └── Sample.Infrastructure
-└── tests
-    └── Sample.Tests
+|-- .github/workflows
+|   |-- ci.yml
+|   |-- reusable-dotnet-build.yml
+|   |-- reusable-dotnet-test.yml
+|   |-- reusable-package.yml
+|   `-- release-promotion-simulation.yml
+|-- docs
+|   |-- architecture.md
+|   |-- release-flow.md
+|   |-- what-this-demonstrates.md
+|   `-- workflow-design.md
+|-- scripts
+|   |-- build.ps1
+|   |-- package.ps1
+|   `-- promote-artifact.ps1
+|-- src
+|   |-- Sample.Api
+|   |-- Sample.Core
+|   `-- Sample.Infrastructure
+`-- tests
+    `-- Sample.Tests
 ```
 
 ## How The CI Workflow Works
@@ -62,6 +64,8 @@ That design improves maintainability, reduces pipeline drift, makes modernizatio
 
 The result is a clean separation between compile/test validation and package creation.
 
+The CI workflow uploads a build artifact named `sample-api-build-output`, downloads that artifact in the package stage, and uploads a package artifact named `sample-api-release-package`.
+
 ## How The Release Promotion Simulation Works
 
 `release-promotion-simulation.yml` is manually triggered with a target environment choice: `development`, `test`, or `staging`.
@@ -69,6 +73,8 @@ The result is a clean separation between compile/test validation and package cre
 The workflow builds and packages the release candidate once, then downloads the package artifact in a promotion job. The promotion step writes a public-safe promotion record that includes the artifact file name, hash, target environment, and timestamp. It does not deploy to any real target.
 
 This demonstrates the release-management idea that the artifact promoted between environments should be the same artifact that was already built and tested.
+
+In the manual release simulation, the release package is named `sample-api-release-candidate-package`, and the promotion record is uploaded as `sample-api-promotion-record-<environment>`.
 
 ## Public-Safety Note
 
@@ -88,6 +94,12 @@ This repository reflects the kind of modernization work common in established .N
 The sample is intentionally small, but the design mirrors production-minded habits: deterministic build commands, scripted packaging, artifact metadata, environment gates, and clear documentation.
 
 ## Run Locally
+
+Prerequisites:
+
+- .NET 8 SDK.
+- PowerShell 7 or Windows PowerShell.
+- Commands run from the repository root.
 
 ```powershell
 dotnet restore .\dotnet-github-actions-enterprise-pipeline.sln

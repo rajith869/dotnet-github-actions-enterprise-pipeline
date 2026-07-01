@@ -1,4 +1,4 @@
-name: release-promotion-simulation
+name: Release Promotion Simulation
 
 on:
   workflow_dispatch:
@@ -27,14 +27,14 @@ concurrency:
 
 jobs:
   build:
-    name: Build once
+    name: Build release candidate once
     uses: ./.github/workflows/reusable-dotnet-build.yml
     with:
       dotnet_version: 8.0.x
       solution_path: dotnet-github-actions-enterprise-pipeline.sln
       configuration: Release
       api_project_path: src/Sample.Api/Sample.Api.csproj
-      artifact_name: release-build-output
+      artifact_name: sample-api-release-build-output
       version_prefix: ${{ inputs.version_prefix }}
 
   test:
@@ -54,7 +54,7 @@ jobs:
     uses: ./.github/workflows/reusable-package.yml
     with:
       build_artifact_name: ${{ needs.build.outputs.build_artifact_name }}
-      package_artifact_name: release-candidate-package
+      package_artifact_name: sample-api-release-candidate-package
       package_name: sample-api
       package_version: ${{ needs.build.outputs.package_version }}
 
@@ -86,7 +86,7 @@ jobs:
       - name: Upload promotion record
         uses: actions/upload-artifact@v4
         with:
-          name: promotion-record-${{ inputs.target_environment }}
+          name: sample-api-promotion-record-${{ inputs.target_environment }}
           path: artifacts/promotion
           if-no-files-found: error
 
